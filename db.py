@@ -208,13 +208,48 @@ class MessagingDatabase:
         if not firebase_uid:
             raise ValueError('firebase_uid is required')
         
+        email = user_data.get('email')
+        
         conn = self.get_connection()
         try:
-            # Check if user exists
+            # Check if user exists by Firebase UID
             existing_user = self.get_user_by_firebase_uid(firebase_uid)
             
+            # If user doesn't exist by UID but email is provided, check by email
+            # This handles the case where Firebase account was deleted and recreated with new UID
+            if not existing_user and email:
+                existing_user_by_email = self.get_user_by_email(email)
+                if existing_user_by_email:
+                    print(f"🔄 Found existing user by email {email} with different Firebase UID")
+                    print(f"   Old UID: {existing_user_by_email.get('firebase_uid')}, New UID: {firebase_uid}")
+                    print(f"   Updating record with new Firebase UID...")
+                    # Update the existing record with the new Firebase UID
+                    conn.execute('''
+                        UPDATE users
+                        SET firebase_uid = ?,
+                            display_name = ?,
+                            photo_url = ?,
+                            role = ?,
+                            phone_number = ?,
+                            email_verified = ?,
+                            updated_at = CURRENT_TIMESTAMP,
+                            last_seen = ?
+                        WHERE email = ?
+                    ''', (
+                        firebase_uid,
+                        user_data.get('display_name'),
+                        user_data.get('photo_url'),
+                        user_data.get('role'),
+                        user_data.get('phone_number'),
+                        user_data.get('email_verified', False),
+                        datetime.now().isoformat() + 'Z',
+                        email
+                    ))
+                    conn.commit()
+                    return firebase_uid
+            
             if existing_user:
-                # Update existing user
+                # Update existing user (by Firebase UID)
                 conn.execute('''
                     UPDATE users
                     SET email = ?,
@@ -237,7 +272,7 @@ class MessagingDatabase:
                     firebase_uid
                 ))
             else:
-                # Create new user
+                # Create new user (no existing record by UID or email)
                 conn.execute('''
                     INSERT INTO users 
                     (firebase_uid, email, display_name, photo_url, role, phone_number, email_verified, last_seen)
