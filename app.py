@@ -33,7 +33,15 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-CORS(app)
+# Configure CORS to explicitly allow DELETE method and handle preflight requests
+CORS(app, resources={
+    r"/messages/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # Track start time for uptime
 START_TIME = time.time()
