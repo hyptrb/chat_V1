@@ -64,6 +64,8 @@ class MessagingDatabase:
                     participant2_id TEXT,
                     participant2_name TEXT,
                     participant2_avatar TEXT,
+                    participant2_email TEXT,
+                    participant_type TEXT,
                     last_message TEXT,
                     last_message_time TEXT,
                     unread_count INTEGER DEFAULT 0,
@@ -557,6 +559,7 @@ class MessagingDatabase:
     def get_or_create_conversation(self, thread_id: str, participant1_id: str, participant2_id: str = None, 
                                    participant1_name: str = '', participant2_name: str = None,
                                    participant1_avatar: str = '', participant2_avatar: str = None,
+                                   participant2_email: str = None, participant_type: str = None,
                                    name: str = None) -> str:
         """
         Get existing conversation or create new one in a thread.
@@ -590,12 +593,12 @@ class MessagingDatabase:
                 conn.execute('''
                     INSERT INTO conversations 
                     (id, thread_id, name, participant1_id, participant1_name, participant1_avatar,
-                     participant2_id, participant2_name, participant2_avatar)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     participant2_id, participant2_name, participant2_avatar, participant2_email, participant_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     conversation_id, thread_id, name,
                     p1_id, p1_name, p1_avatar,
-                    p2_id, p2_name, p2_avatar
+                    p2_id, p2_name, p2_avatar, participant2_email, participant_type
                 ))
             else:
                 # Create conversation with only participant1
@@ -603,8 +606,8 @@ class MessagingDatabase:
                 conn.execute('''
                     INSERT INTO conversations 
                     (id, thread_id, name, participant1_id, participant1_name, participant1_avatar,
-                     participant2_id, participant2_name, participant2_avatar)
-                    VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
+                     participant2_id, participant2_name, participant2_avatar, participant2_email, participant_type)
+                    VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)
                 ''', (
                     conversation_id, thread_id, name,
                     participant1_id, participant1_name, participant1_avatar
